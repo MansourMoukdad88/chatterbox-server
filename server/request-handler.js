@@ -11,8 +11,9 @@ this file and include it in basic-server.js so that it actually works.
 *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
 
 **************************************************************/
-
-var requestHandler = function(request, response) {
+ var url = require('url');
+ var messages = [];
+ exports.requestHandler = function(request, response) {
   // Request and Response come from node's http module.
   //
   // They include information about both the incoming request, such as
@@ -29,6 +30,7 @@ var requestHandler = function(request, response) {
   // console.logs in your code.
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
 
+
   // The outgoing status.
   var statusCode = 200;
 
@@ -36,10 +38,29 @@ var requestHandler = function(request, response) {
   var headers = defaultCorsHeaders;
 
   // Tell the client we are sending them plain text.
+
   //
+
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
-  headers['Content-Type'] = 'text/plain';
+  headers['Content-Type'] = 'application/JSON';
+  // to check 
+
+  
+  if(request.url === '/classes/messages') {
+    if (request.method === 'POST') {
+      // to convert the data in request to readable data in UTF8
+      request.setEncoding('utf8');
+      // we use data event emitter to listen the data 
+      request.on('data',function(chunc){
+       // var q =  url.parse(request.url, true).query;
+         messages.push(chunc);
+        
+      })
+    }
+  }
+  
+   console.log (messages);
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
@@ -52,7 +73,7 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end('Hello, World!');
+  response.end(JSON.stringify({results: messages}));
 };
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
