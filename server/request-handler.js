@@ -1,18 +1,72 @@
-/*************************************************************
 
-You should implement your request handler function in this file.
+// These headers will allow Cross-Origin Resource Sharing (CORS).
+// This code allows this server to talk to websites that
+// are on different domains, for instance, your chat client.
 
-requestHandler is already getting passed to http.createServer()
-in basic-server.js, but it won't work as is.
+var headers = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'access-control-allow-headers': 'content-type, accept',
+  'access-control-max-age': 10 ,// Seconds.
+  'Content-Type': 'application/json'
+};
+// send response function to send the response in all request method  take 3 parameter 
+// response , data that we want to send  , statusCode 
+ var sendResponse = function(response, data, statusCode){
+     // default statusCode 200 if we do not passs it vaalus when call it
+    var statusCode = statusCode || 200;
+    // add the header and the status code to the response
+    response.writeHead(statusCode, headers);
+    // add the data to the body
+    response.end(JSON.stringify({results: data}));
+ }
 
-You'll have to figure out a way to export this function from
-this file and include it in basic-server.js so that it actually works.
+// this method to read the data from the request 
+var collectData = function (request, callback){
+  var data = "";
+  request.on('data', function(chunc){
+    data += chunc
+  });
+  request.on('end', function(){
+    callback(JSON.parse(data));
+  });
+} 
 
-*Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
+ var url = require('url');
+ // array to store the data that come from the client
+ var messages = [];
 
-**************************************************************/
+ // object contain the request  method 
+ var actions = {
+  'POST': function (request, response) {
+    //using collectData to return the data from Post request and push to array inside callback 
+    collectData(request, function(data){
+        messages.push(data);
+        // send response to client
+        sendResponse(response, 'ok')
+    });
+  }, 
+  'GET': function(request, response) {
+    sendResponse(response, messages);
+  },
+  'OPTIONS': function (request, response){
+    sendResponse(response, null);
+  }
+ }
+  
+ // Adding requestHandler function to exports module 
+ exports.requestHandler = function(request, response) {
+  console.log('Serving request type ' + request.method + ' for url ' + request.url);
+    //call the action depend on the request method 
+    var action = actions[request.method];
+    if (action) {
+      // pass the request and response to the function
+      action(request, response);
+    }
+  
+};
 
-var requestHandler = function(request, response) {
+
   // Request and Response come from node's http module.
   //
   // They include information about both the incoming request, such as
@@ -27,23 +81,10 @@ var requestHandler = function(request, response) {
   // Adding more logging to your server can be an easy way to get passive
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
-  console.log('Serving request type ' + request.method + ' for url ' + request.url);
-
-  // The outgoing status.
-  var statusCode = 200;
-
-  // See the note below about CORS headers.
-  var headers = defaultCorsHeaders;
-
-  // Tell the client we are sending them plain text.
-  //
-  // You will need to change this if you are sending something
-  // other than plain text, like JSON or HTML.
-  headers['Content-Type'] = 'text/plain';
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
-  response.writeHead(statusCode, headers);
+  
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
@@ -52,8 +93,8 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end('Hello, World!');
-};
+  
+
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that
@@ -64,10 +105,4 @@ var requestHandler = function(request, response) {
 //
 // Another way to get around this restriction is to serve you chat
 // client from this domain by setting up static file serving.
-var defaultCorsHeaders = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'access-control-allow-headers': 'content-type, accept',
-  'access-control-max-age': 10 // Seconds.
-};
 
